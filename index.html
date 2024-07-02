@@ -1,0 +1,228 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KI-Chatbots vs KI-Agenten Quiz</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .card {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+        }
+        .question {
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        .options label {
+            display: block;
+            margin-bottom: 10px;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+        }
+        #result {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        #chartContainer {
+            width: 300px;
+            height: 300px;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>KI-Chatbots vs KI-Agenten Quiz</h1>
+        <p>Teste dein Wissen über KI-Chatbots und KI-Agenten</p>
+        <div id="quiz">
+            <p class="question" id="question"></p>
+            <div class="options" id="options"></div>
+            <button id="submit">Weiter</button>
+        </div>
+        <div id="results" style="display:none;">
+            <p id="result"></p>
+            <div id="chartContainer">
+                <canvas id="resultChart"></canvas>
+            </div>
+            <button id="restart">Quiz wiederholen</button>
+        </div>
+    </div>
+
+    <script>
+        const questions = [
+            {
+                question: "Welche KI-Lösung eignet sich besser für die Bearbeitung routinemäßiger Kundenanfragen?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Chatbots"
+            },
+            {
+                question: "Welche Technologie kann personalisierte Antworten basierend auf früheren Interaktionen geben?",
+                options: ["KI-Chatbots", "KI-Agenten", "Keine von beiden"],
+                correctAnswer: "KI-Agenten"
+            },
+            {
+                question: "Welche Lösung ist einfacher einzurichten und zu warten?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Chatbots"
+            },
+            {
+                question: "Welche Technologie eignet sich besser für komplexe, offene Gespräche?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Agenten"
+            },
+            {
+                question: "Welche Lösung ist ideal für E-Commerce-Support und die Beantwortung häufig gestellter Fragen?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Chatbots"
+            },
+            {
+                question: "Welche KI-Lösung könnte eher zu einer Verringerung menschlicher Arbeitsplätze im Kundenservice führen?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Agenten"
+            },
+            {
+                question: "Welche Technologie birgt ein größeres Risiko für Datenschutzverletzungen?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Agenten"
+            },
+            {
+                question: "Welche Lösung könnte eher zu Frustration bei Kunden führen, wenn sie komplexe Probleme haben?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Chatbots"
+            },
+            {
+                question: "Welche Technologie hat das größere Potenzial, menschliche Emotionen zu simulieren?",
+                options: ["KI-Chatbots", "KI-Agenten", "Keine von beiden"],
+                correctAnswer: "KI-Agenten"
+            },
+            {
+                question: "Welche KI-Lösung könnte eher zu einer Überabhängigkeit von Technologie in der Kommunikation führen?",
+                options: ["KI-Chatbots", "KI-Agenten", "Beide gleichermaßen"],
+                correctAnswer: "KI-Agenten"
+            }
+        ];
+
+        let currentQuestion = 0;
+        let score = 0;
+
+        const questionEl = document.getElementById('question');
+        const optionsEl = document.getElementById('options');
+        const submitBtn = document.getElementById('submit');
+        const quizEl = document.getElementById('quiz');
+        const resultsEl = document.getElementById('results');
+        const resultEl = document.getElementById('result');
+        const restartBtn = document.getElementById('restart');
+        const chartCtx = document.getElementById('resultChart').getContext('2d');
+
+        function loadQuestion() {
+            const question = questions[currentQuestion];
+            questionEl.textContent = question.question;
+            optionsEl.innerHTML = '';
+            question.options.forEach((option, index) => {
+                const label = document.createElement('label');
+                label.innerHTML = `
+                    <input type="radio" name="answer" value="${option}">
+                    ${option}
+                `;
+                optionsEl.appendChild(label);
+            });
+            submitBtn.disabled = true;
+        }
+
+        function selectOption() {
+            submitBtn.disabled = false;
+        }
+
+        function submitAnswer() {
+            const selectedOption = document.querySelector('input[name="answer"]:checked');
+            if (selectedOption) {
+                const answer = selectedOption.value;
+                if (answer === questions[currentQuestion].correctAnswer) {
+                    score++;
+                }
+                currentQuestion++;
+                if (currentQuestion < questions.length) {
+                    loadQuestion();
+                } else {
+                    showResults();
+                }
+            }
+        }
+
+        function getResultColor() {
+            const incorrectAnswers = questions.length - score;
+            if (incorrectAnswers >= 5) return "#FF6B6B";  // Rot
+            if (incorrectAnswers >= 2) return "#FFD93D";  // Gelb
+            return "#6BCB77";  // Grün
+        }
+
+        function showResults() {
+            quizEl.style.display = 'none';
+            resultsEl.style.display = 'block';
+            resultEl.textContent = `Dein Ergebnis: ${score} / ${questions.length}`;
+            
+            new Chart(chartCtx, {
+                type: 'pie',
+                data: {
+                    labels: ['Korrekt', 'Falsch'],
+                    datasets: [{
+                        data: [score, questions.length - score],
+                        backgroundColor: [getResultColor(), '#8884d8']
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                        },
+                        title: {
+                            display: true,
+                            text: 'Quizergebnis'
+                        }
+                    }
+                }
+            });
+        }
+
+        function restartQuiz() {
+            currentQuestion = 0;
+            score = 0;
+            quizEl.style.display = 'block';
+            resultsEl.style.display = 'none';
+            loadQuestion();
+        }
+
+        loadQuestion();
+        optionsEl.addEventListener('change', selectOption);
+        submitBtn.addEventListener('click', submitAnswer);
+        restartBtn.addEventListener('click', restartQuiz);
+    </script>
+</body>
+</html>
